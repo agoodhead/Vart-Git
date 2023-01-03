@@ -26,7 +26,7 @@ from queue import Empty
 import gspread
 import json
 import os
-
+#sfads
 ##this stuff is used for SnapScan
 
 URL1 = "https://pos.snapscan.io/merchant/api/v1/payments?status=completed&merchantReference=yay"
