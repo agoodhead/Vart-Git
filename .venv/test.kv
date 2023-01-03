@@ -1,0 +1,149 @@
+#: import Factory kivy.factory.Factory
+
+<MyPopup@Popup>
+    auto_dismiss: False
+    size_hint:0.7,0.7
+    pos_hint:{"x":0.5,"top":0.5}
+    title: "SnapScan"
+    BoxLayout:
+        orientation:"vertical"
+        size:root.width, root.height
+        
+        ProgressBar:
+            id: my_progress_bar
+            value:0.5
+            min:0
+            max:1
+            pos_hint: {'x':0.1}
+            size_hint_x:0.8
+
+        Image:
+            source:'SnapScanQR.png'
+        Label:
+            text: "Total:"+str(app.Total)
+
+        Button:
+            text:"close" 
+            font_size: 20
+            on_release:root.dismiss()
+
+
+<MyGrid>:
+
+    GridLayout:
+        cols:1
+        size: root.width, root.height-50
+        pos: 0, 100
+        
+        Label:
+            text: "Welcome to my app"
+
+        GridLayout:
+            cols:3
+
+            Button:
+                id:Snack1_but
+                text: app.Snack1_name + "\nR"+ str(app.Snack1_price)+".00"
+                disabled: False
+                
+                on_press: root.Add_cart(app.Snack1_name)
+                on_press: root.Update_Total(app.Snack1_name)
+                on_press: root.disable_Button()
+                on_press: root.Rem(app.Snack1_name)
+               
+
+            Button:
+                id:Snack2_but
+                text:app.Snack2_name + "\nR"+ str(app.Snack2_price)+".00"
+                disabled: False
+
+                on_press: root.Add_cart(app.Snack2_name)
+                on_press: root.Update_Total(app.Snack2_name)
+                on_press: root.disable_Button()
+                on_press: root.Rem(app.Snack2_name)
+
+            Button:
+                id:Snack3_but
+                text:app.Snack3_name + "\nR"+ str(app.Snack3_price)+".00"
+                disabled: False
+                on_press: root.Add_cart(app.Snack3_name)
+                on_press: root.Update_Total(app.Snack3_name)
+                on_press: root.disable_Button()
+                on_press: root.Rem(app.Snack3_name)
+
+            Label:
+                id:Snack1_count
+                text:"Available: "+ str(app.Snack1_remain)
+            Label:
+                id:Snack2_count
+                text:"Available:"+ str(app.Snack2_remain)
+            Label:
+                id:Snack3_count
+                text:"Available:"+ str(app.Snack3_remain)
+
+            Button:
+                id:Snack4_but
+                text:app.Snack4_name + "\nR"+ str(app.Snack4_price)+".00"
+                disabled: False
+                on_press: root.Add_cart(app.Snack4_name)
+                on_press: root.Update_Total(app.Snack4_name)
+                on_press: root.disable_Button()
+                on_press: root.Rem(app.Snack4_name)
+
+            Button:
+                id:Snack5_but
+                text:app.Snack5_name + "\nR"+ str(app.Snack5_price)+".00"
+                disabled: False
+                on_press: root.Add_cart(app.Snack5_name)
+                on_press: root.Update_Total(app.Snack5_name)
+                on_press: root.disable_Button()
+                on_press: root.Rem(app.Snack5_name)
+                
+
+            Button:
+                id:Snack6_but
+                text:app.Snack6_name + "\nR"+ str(app.Snack6_price)+".00"
+                disabled: False
+                on_press: root.Add_cart(app.Snack6_name)
+                on_press: root.Update_Total(app.Snack6_name)
+                on_press: root.disable_Button()
+                on_press: root.Rem(app.Snack6_name)
+            
+            Label:
+                id:Snack4_count
+                text:"Available:"+ str(app.Snack4_remain)
+            Label:
+                id:Snack5_count
+                text:"Available:"+ str(app.Snack5_remain)
+            Label:
+                id:Snack6_count
+                text:"Available:"+ str(app.Snack6_remain)
+                
+
+        GridLayout:
+            cols:2
+
+            Label:
+                id:CartID
+                text: "Cart:"
+
+            Label:
+                id:TotalID
+                text: "Total:"
+
+
+        GridLayout:
+            cols:2
+           
+            Button:
+                text:"Clear"
+                on_press: root.Clear_all()
+
+            Button:
+                id:NextBut
+                text:"Next"
+                disabled: True
+                on_press: root.disable_Button()
+                on_release:Factory.MyPopup().open()
+                on_press:root.QRcode()
+                
