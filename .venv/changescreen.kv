@@ -98,14 +98,20 @@
 
         GridLayout:
             cols:2
+            
+            Label:
+                text: "Cart:"
+                
+            Label:
+                text: "Total:"
 
             Label:
                 id:CartID
-                text: "Cart:"
-
+                text:
+                #height: (len(CartID._lines)+1) * CartID.line_height
             Label:
                 id:TotalID
-                text: "Total:"
+                text: 
 
 
         GridLayout:
@@ -129,16 +135,23 @@
 
 <SecondWindow>:
     name:"second"
-
     title: "SnapScan"
+
+    canvas:
+        Color:
+            rgba: 1, 1, 1, 1    # Blue
+        # size and position of Canvas
+        Rectangle:
+            pos: self.pos
+            size: self.size
     BoxLayout:
         orientation:"vertical"
         size:root.width, root.height
 
         AsyncImage:
             id: QR
-            source:'loading.png'
-            nocache: True
+            source:'Loading.png'
+            
         Label:
             id:CheckoutTotal
             text: "Total:"+str(app.Total)

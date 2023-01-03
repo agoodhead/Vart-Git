@@ -12,6 +12,7 @@ WindowManager:
         pos: 0, 100
         
         Label:
+            id:yay
             text: "Welcome to my app"
 
         GridLayout:
@@ -94,18 +95,26 @@ WindowManager:
             Label:
                 id:Snack6_count
                 text:"Available:"+ str(app.Snack6_remain)
-                
+
+    
 
         GridLayout:
             cols:2
 
             Label:
+                text: "Cart"
+                
+            Label:
+                text: "Total:"
+
+            Label:
                 id:CartID
-                text: "Cart:"
+                text: ""
+                height: (len(CartID._lines)+1) * CartID.line_height
 
             Label:
                 id:TotalID
-                text: "Total:"
+                text: ""
 
 
         GridLayout:

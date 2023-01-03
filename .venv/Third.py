@@ -26,7 +26,7 @@ from queue import Empty
 import gspread
 import json
 import os
-#sfads
+
 ##this stuff is used for SnapScan
 
 URL1 = "https://pos.snapscan.io/merchant/api/v1/payments?status=completed&merchantReference=yay"
@@ -93,6 +93,7 @@ Snack6_price=(Inventory_Loaded[5]['Price'])
 
 
 #this should be saved in Text file incase Pi is turned off. File to be overwritten each time purchase is made
+
 Remaining_stock={Snack1_name:Snack1_number,
                     Snack2_name:Snack2_number,
                     Snack3_name:Snack3_number,
@@ -189,9 +190,16 @@ class MainApp(App):
         #update cart dictionary
         Cart[snack_name] = Cart.get(snack_name, 0) + 1
         Cart_print = {x:y for x,y in Cart.items() if y!=0} # removes keys with zero items  before printing on screen
+        
+        one=str(Cart_print)
+        two=one.replace('{','')
+        three=two.replace("}", '')
+        four=three.replace("'", '')
+        five=four.replace(",","\n")
 
         #need some work to print the cart in a neater way !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!1
-        local.ids.CartID.text=f'Cart: {str(Cart_print)}'
+        local.ids.CartID.text=five
+        
 
     def Update_total(self,snack_n):
         ## updates total cost
@@ -202,8 +210,8 @@ class MainApp(App):
         price =(next((sub for sub in Inventory_Loaded if sub['Product'] == snack_n), None)["Price"]) #gets price
         Total=Total+price
         local= self.root.get_screen('first')
-        local.ids.TotalID.text=f'Total Price: R{Total}.00'
-        second.ids.CheckoutTotal.text=f'Total Price: R{Total}.00'
+        local.ids.TotalID.text=f'R{Total}.00'
+        second.ids.CheckoutTotal.text=f'Total Price :R{Total}.00'
     def Rem(self,snack_name):
         
         global Remaining_stock_int
@@ -260,7 +268,7 @@ class MainApp(App):
         Cart={}
         Total=0
     
-        local.ids.CartID.text=f'Cart: {Cart}'
+        local.ids.CartID.text=f''
         local.ids.TotalID.text=f'Total Price: R{Total}.00'
         local.ids.NextBut.disabled =True
         
@@ -308,7 +316,7 @@ class MainApp(App):
             TOTAL=str(Total*100)
             #QR_code=requests.get(URL2+SNAP_CODE+".png?id=Ord"+ORDER_NUMBER+"&amount="+TOTAL+"&snap_code_size=250&strict=true")
 
-            url=URL2+SNAP_CODE+".png?id=Ord"+ORDER_NUMBER+"&amount="+TOTAL+"&snap_code_size=250&strict=true"
+            url=URL2+SNAP_CODE+".png?id=Ord"+ORDER_NUMBER+"&amount="+TOTAL+"&snap_code_size=500&strict=true"
 
             QR_code=UrlRequest(url,on_success=self.Pass_image,on_failure=self.Fail_image)
             
@@ -347,7 +355,10 @@ class MainApp(App):
         second.ids.QR.source= 'SnapScanQR.png'
         
     def Fail_image(self):
-        pass
+
+        second= self.root.get_screen('second')
+        second.ids.QR.source= 'QR_Fail.png'
+        
 
     # async def app_func(self):
     #     '''trio needs to run a function, so this is it. '''
