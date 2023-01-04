@@ -14,9 +14,9 @@ from kivy.uix.image import AsyncImage,Image
 from kivy.core.image import Image as CoreImage
 from kivy.uix.progressbar import ProgressBar
 import copy
-from kivy.uix.screenmanager import Screen,ScreenManager
+from kivy.uix.screenmanager import Screen,ScreenManager,RiseInTransition
 from kivy.properties import ObjectProperty
-#from kivymd.app import MDApp
+from kivymd.app import MDApp
 from kivy.network.urlrequest import UrlRequest
 from PIL import Image
 import requests
@@ -26,11 +26,12 @@ from queue import Empty
 import gspread
 import json
 import os
+import datetime
 
 ##this stuff is used for SnapScan
 
-URL1 = "https://pos.snapscan.io/merchant/api/v1/payments?status=completed&merchantReference=yay"
-URL2="https://pos.snapscan.io/qr/"
+URL1 = "https://pos.snapscan.io/merchant/api/v1/payments?status=completed&merchantReference=" #for checking payment status
+URL2="https://pos.snapscan.io/qr/"#for creating QR codes
 API_KEY = "ef960def-2e4e-41ba-ab28-1efb393d74a4"
 SNAP_CODE= "-XUZdg74"
 
@@ -39,9 +40,9 @@ SNAP_CODE= "-XUZdg74"
 Project="VartProduct"
 Restock_Sheet="Restock_List"
 Inventory_Sheet= "Inventory_Status"
-Inventory_Loaded=[{'Product':'none','Quantity':0, 'Price':0},
-                    {'Product':'none','Quantity':0, 'Price':0},
-                    {'Product':'none','Quantity':0, 'Price':0}] #this is to build the vector
+Inventory_Loaded=[{'Product':'none','Quantity':0, 'Price':0.0},
+                    {'Product':'none','Quantity':0, 'Price':0.0},
+                    {'Product':'none','Quantity':0, 'Price':0.0}] #this is to build the vector
 
 
 def Google_Sheet_Restock(Project,Restock_Sheet,):
@@ -54,12 +55,13 @@ def Google_Sheet_Restock(Project,Restock_Sheet,):
     else:
         print("The file does not exist") 
     
-    #update the file name if api key is moved
+    #Used for google sheet: update the file name if api key is moved
     sa = gspread.service_account(filename="varttest-7608f41c9461.json")
     sh = sa.open(Project)
     wks = sh.worksheet(Restock_Sheet)
     Inventory_Loaded = wks.get_all_records()
-    
+
+    #saves google sheet contens as jason
     with open("Inventory_Loaded.json", "w") as outfile:
         json.dump(Inventory_Loaded, outfile)
 
@@ -74,22 +76,22 @@ with open('Inventory_Loaded.json', 'r') as openfile:
 
 Snack1_name= (Inventory_Loaded[0]['Product']) 
 Snack1_number=(Inventory_Loaded[0]['Quantity'])
-Snack1_price=(Inventory_Loaded[0]['Price'])
+Snack1_price="%.2f" %float((Inventory_Loaded[0]['Price']))
 Snack2_name=(Inventory_Loaded[1]['Product'])
 Snack2_number=(Inventory_Loaded[1]['Quantity'])
-Snack2_price=(Inventory_Loaded[1]['Price'])
+Snack2_price="%.2f" %float((Inventory_Loaded[1]['Price']))
 Snack3_name=(Inventory_Loaded[2]['Product'])
 Snack3_number=(Inventory_Loaded[2]['Quantity'])
-Snack3_price=(Inventory_Loaded[2]['Price'])
+Snack3_price="%.2f" %float((Inventory_Loaded[2]['Price']))
 Snack4_name=(Inventory_Loaded[3]['Product'])
 Snack4_number=(Inventory_Loaded[3]['Quantity'])
-Snack4_price=(Inventory_Loaded[3]['Price'])
+Snack4_price="%.2f" %float((Inventory_Loaded[3]['Price']))
 Snack5_name=(Inventory_Loaded[4]['Product'])
 Snack5_number=(Inventory_Loaded[4]['Quantity'])
-Snack5_price=(Inventory_Loaded[4]['Price'])
+Snack5_price="%.2f" %float((Inventory_Loaded[4]['Price']))
 Snack6_name=(Inventory_Loaded[5]['Product'])
 Snack6_number=(Inventory_Loaded[5]['Quantity'])
-Snack6_price=(Inventory_Loaded[5]['Price'])
+Snack6_price="%.2f" %float((Inventory_Loaded[5]['Price']))
 
 
 #this should be saved in Text file incase Pi is turned off. File to be overwritten each time purchase is made
@@ -105,13 +107,16 @@ Remaining_stock={Snack1_name:Snack1_number,
 Remaining_stock_int={Snack1_name:3,Snack2_name:3,Snack3_name:3,Snack4_name:0,Snack5_name:0,Snack6_name:0}  
 
 Total =0 # starts the prorame with zero 
-Cart={} # starts teh programe with nothing in cart
-
+Cart={} # starts the programe with nothing in cart
+Payment_status=False
 
 vending_ID=1254 #should be number used to generate qr code
-ORDER_NUMBER=str(1) #this will be updated for each purchase and will be included in the Snap QR code
-QR_status=False #False untill the QR_code has sucsessfully generated
+#ORDER_NUMBER=str(1) #this will be updated for each purchase and will be included in the Snap QR code
 
+# def order(self):
+#     global date
+#     global ORDER_NUMBER
+#     ORDER_NUMBER=datetime.datetime.now().strftime("%f")
 
 Builder.load_file('changescreen.kv')
 
@@ -121,24 +126,8 @@ class FirstWindow(Screen):
 class SecondWindow(Screen):
     pass
 
-#    async def Progress(self):
-    
-#         global QR_status
-#         try:
-#             i = 0
-#             while QR_status==False:
-#                 print("Progressbar")
-#                 # popup = MyPopup()
-#                 # current=popupids.my_progress_bar.value
-#                 # current+= 0.02
-#                 # popup.ids.my_progress_bar.value=current
-#                 i += 1
-#                 await trio.sleep(1)
-#         except trio.Cancelled as e:
-#             print('Wasting time was canceled', e)
-#         finally:
-#         # when canceled, print that it finished
-#             print('Done wasting time')
+class ThirdWindow(Screen):
+    pass
 
 class RootWidget(ScreenManager):
     pass
@@ -149,13 +138,11 @@ class MainApp(App):
     result_text = StringProperty()
     result_image = StringProperty()
     headers = DictProperty()
-
-    
-    nursery = None
     
     def build(self):
-
+        
         self.Total=Total
+        self.Payment_status=Payment_status
 
         self.Snack1_name=Snack1_name
         self.Snack2_name=Snack2_name
@@ -179,10 +166,11 @@ class MainApp(App):
         self.Snack6_remain=Remaining_stock[Snack6_name]
 
         return RootWidget()
-
+           
     def Add_cart(self,snack_name): #
         # adds items to cart
         global Cart
+        global three#nice cart string
         local= self.root.get_screen('first') #used to assign ids to first screen widgets
         
 #self.root.get_screen('Write').ids.input.text
@@ -200,7 +188,6 @@ class MainApp(App):
         #need some work to print the cart in a neater way !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!1
         local.ids.CartID.text=five
         
-
     def Update_total(self,snack_n):
         ## updates total cost
         global Total
@@ -302,36 +289,31 @@ class MainApp(App):
 
     def Disable_button(self):
         local= self.root.get_screen('first')
-        local.ids.NextBut.disabled =False
+        local.ids.NextBut.disabled =False    
 
     def QRcode(self):
-    # Creating an instance of QRCode class
+
         global Total
         global vending_ID
-        global QR_status
-        global QR_code
+        global ORDER_NUMBER
+
+        #removes old QR Code from file system before a new one is created
+        if os.path.exists("SnapScanQR.png"):
+            os.remove("SnapScanQR.png")
+        else:
+            print("The file does not exist")  
         
-        if Total>0:
-            
-            TOTAL=str(Total*100)
-            #QR_code=requests.get(URL2+SNAP_CODE+".png?id=Ord"+ORDER_NUMBER+"&amount="+TOTAL+"&snap_code_size=250&strict=true")
-
-            url=URL2+SNAP_CODE+".png?id=Ord"+ORDER_NUMBER+"&amount="+TOTAL+"&snap_code_size=500&strict=true"
-
-            QR_code=UrlRequest(url,on_success=self.Pass_image,on_failure=self.Fail_image)
-            
-            # #"https://pos.snapscan.io/qr/-XUZdg74.png?id=Ord123&amount=1000&snap_code_size=125"
-            # if QR_code.status_code == 200:
-            #     with open("SnapScanQR.png", "wb") as f:
-            #         f.write(QR_code.content)
-            #         QR_status=True
-            # else:
-            #     print("noooooo")
-            #     #print(QR_code.status_code)
-            #     QR_status=False
-
+        ORDER_NUMBER=datetime.datetime.now().strftime("%f") #the millisecond date is the order number
+    
+        TOTAL=str(Total*100)# total needs to be in cents for Snap Scan API
+       
+        url=URL2+SNAP_CODE+".png?id="+ORDER_NUMBER+"&amount="+TOTAL+"&snap_code_size=500&strict=true"
+        UrlRequest(url,on_success=self.Pass_image,on_failure=self.Fail_image) #this uses the asyn requet from Kivy
+    
     def Pass_image(self, req, result):
-
+        ''' This funciton saves the UrlRequest as a .png if the url request is sussessfull '''
+        
+        # saves snapQR to png
         headers = req.resp_headers
         content_type = headers.get('content-type', headers.get('Content-Type'))
         if content_type.startswith('image/'):
@@ -344,21 +326,56 @@ class MainApp(App):
                 self.result_text = json.dumps(result, indent=2)
             else:
                 self.result_text = result
+        
         self.status = req.resp_status
         self.headers = headers
-       
-        # with open("SnapScanQR.png", "wb") as f:
-        #     f.write(QR_code.content)
-        #     QR_status=True
+    
+        second= self.root.get_screen('second') 
+        second.ids.QR.source= 'SnapScanQR.png' #displays the QR code as an image
 
-        second= self.root.get_screen('second')
-        second.ids.QR.source= 'SnapScanQR.png'
-        
+
     def Fail_image(self):
-
-        second= self.root.get_screen('second')
-        second.ids.QR.source= 'QR_Fail.png'
+        ''' this runs if the url fails'''
+        second= self.root.get_screen('second') 
+        second.ids.QR.source= 'QR_Fail.png'#displays error message
         
+   
+    def CheckPayment(self):
+        ''' this checks if payment was sucessfull''' 
+        global ORDER_NUMBER
+        global Payment_status
+
+        Payment_status=False
+        i=1
+
+        while Payment_status==False and i<5:
+
+            i+=1
+            response=requests.get(URL1+ORDER_NUMBER,auth = HTTPBasicAuth(API_KEY, "")) # gets payment status from SnapScan
+    
+            if response.status_code == 200 and len(json.loads(response.content)) > 0:
+        
+                Snap_response=(json.loads(response.content))[0] #only one payment in list so check first item
+                check=(Snap_response['merchantReference'])      # dictionary search for OrderNumber refernce
+        
+                if check==ORDER_NUMBER:
+                    Payment_status=True
+                
+                else:
+                    pass
+            else:
+                pass
+            sleep(1)
+
+    # def Action(self,Payment_status):
+
+    #     #makes a dict of the order summary
+    #     Order_Summary={"Order Number":ORDER_NUMBER,"Total R":Total,"Date":date,"Cart":three}
+
+    #     #save dict as jason
+    #     with open("Order_Summary.json", "w") as outfile:
+    #         json.dump(Order_Summary, outfile)
+######################################
 
     # async def app_func(self):
     #     '''trio needs to run a function, so this is it. '''

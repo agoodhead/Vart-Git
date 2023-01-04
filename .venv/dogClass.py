@@ -1,10 +1,28 @@
+from kivy.lang import Builder
+
 from kivymd.app import MDApp
-from kivymd.uix.label import MDLabel
+
+KV = '''
+MDScreen:
+
+    MDSpinner:
+        size_hint: None, None
+        size: dp(46), dp(46)
+        pos_hint: {'center_x': .5, 'center_y': .5}
+        active: True if check.active else False
+
+    MDCheckbox:
+        id: check
+        size_hint: None, None
+        size: dp(48), dp(48)
+        pos_hint: {'center_x': .5, 'center_y': .4}
+        active: True
+'''
 
 
-class MainApp(MDApp):
+class Test(MDApp):
     def build(self):
-        return MDLabel(text="Hello, World", halign="center")
+        return Builder.load_string(KV)
 
 
-MainApp().run()
+Test().run()
