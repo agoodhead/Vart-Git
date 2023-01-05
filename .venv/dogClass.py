@@ -1,28 +1,38 @@
-from kivy.lang import Builder
+import requests
+from requests.auth import HTTPBasicAuth
+from time import sleep
+import json
 
-from kivymd.app import MDApp
+ORDER_NUMBER=str(697056)
 
-KV = '''
-MDScreen:
-
-    MDSpinner:
-        size_hint: None, None
-        size: dp(46), dp(46)
-        pos_hint: {'center_x': .5, 'center_y': .5}
-        active: True if check.active else False
-
-    MDCheckbox:
-        id: check
-        size_hint: None, None
-        size: dp(48), dp(48)
-        pos_hint: {'center_x': .5, 'center_y': .4}
-        active: True
-'''
+URL1 = "https://pos.snapscan.io/merchant/api/v1/payments?status=completed&merchantReference=" #for checking payment status
+#URL2="https://pos.snapscan.io/qr/"#for creating QR codes
+API_KEY = "ef960def-2e4e-41ba-ab28-1efb393d74a4"
 
 
-class Test(MDApp):
-    def build(self):
-        return Builder.load_string(KV)
+Payment_status=False
+i=1
+while Payment_status==False and i<5:
 
+    i+=1
+    response=requests.get(URL1+ORDER_NUMBER,auth = HTTPBasicAuth(API_KEY, "")) # gets payment status from SnapScan
+    
+    if response.status_code == 200 and len(json.loads(response.content)) > 0:
+        
+        Snap_response=(json.loads(response.content))[0] #only one payment in list so check first item
+        check=(Snap_response['merchantReference'])      # dictionary search for OrderNumber refernce
+        
+        if check==ORDER_NUMBER:
+            Payment_status=True
+            print("yay")
 
-Test().run()
+            #thirdw= self.root.get_screen('thirdwind') 
+            #thirdw.ids.QR.source= 'Payment_Successful.png' #shows sucess png
+                
+        else:
+            pass
+    else:
+        pass
+        sleep(0.5)
+        
+print(Payment_status)

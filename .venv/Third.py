@@ -1,5 +1,5 @@
 from time import sleep
-import trio #used for Async
+#import trio #used for Async
 from kivy.app import async_runTouchApp
 from functools import partial
 from functools import total_ordering
@@ -27,6 +27,7 @@ import gspread
 import json
 import os
 import datetime
+import threading
 
 ##this stuff is used for SnapScan
 
@@ -132,7 +133,7 @@ class ThirdWindow(Screen):
 class RootWidget(ScreenManager):
     pass
 
-class MainApp(App):
+class MainApp(MDApp):
 
     status = NumericProperty()
     result_text = StringProperty()
@@ -164,9 +165,21 @@ class MainApp(App):
         self.Snack4_remain=Remaining_stock[Snack4_name]
         self.Snack5_remain=Remaining_stock[Snack5_name]
         self.Snack6_remain=Remaining_stock[Snack6_name]
-
+        
         return RootWidget()
-           
+
+    def CallThreadOne(self):
+        threading.Thread(target=self.CheckPayment).start()
+
+    def CallThreadTwo(self):
+        threading.Thread(target=self.ReCheckPayment).start()
+
+    def CallThreadTimeOut(self):
+        threading.Thread(target=self.TimeOut).start()
+    
+    def TimeOut(self):
+        sleep(60)
+
     def Add_cart(self,snack_name): #
         # adds items to cart
         global Cart
@@ -289,7 +302,17 @@ class MainApp(App):
 
     def Disable_button(self):
         local= self.root.get_screen('first')
-        local.ids.NextBut.disabled =False    
+        local.ids.NextBut.disabled =False 
+
+    def RemoveImage(self):
+        if os.path.exists("SnapScanQR.png"):
+            os.remove("SnapScanQR.png")
+        else:
+            print("The file does not exist")
+
+        second= self.root.get_screen('second') 
+        second.ids.QR.source= 'Loading.png' #displays the QR code as an image
+
 
     def QRcode(self):
 
@@ -298,10 +321,10 @@ class MainApp(App):
         global ORDER_NUMBER
 
         #removes old QR Code from file system before a new one is created
-        if os.path.exists("SnapScanQR.png"):
-            os.remove("SnapScanQR.png")
-        else:
-            print("The file does not exist")  
+        # if os.path.exists("SnapScanQR.png"):
+        #     os.remove("SnapScanQR.png")
+        # else:
+        #     print("The file does not exist")  
         
         ORDER_NUMBER=datetime.datetime.now().strftime("%f") #the millisecond date is the order number
     
@@ -344,10 +367,47 @@ class MainApp(App):
         ''' this checks if payment was sucessfull''' 
         global ORDER_NUMBER
         global Payment_status
+        
+        thirdw= self.root.get_screen('thirdwind')
+        Payment_status=False
+        i=1
+        while Payment_status==False and i<5:
+            i+=1
+            response=requests.get(URL1+ORDER_NUMBER,auth = HTTPBasicAuth(API_KEY, "")) # gets payment status from SnapScan
+    
+            if response.status_code == 200 and len(json.loads(response.content)) > 0:
+        
+                Snap_response=(json.loads(response.content))[0] #only one payment in list so check first item
+                check=(Snap_response['merchantReference'])      # dictionary search for OrderNumber refernce
+        
+                if check==ORDER_NUMBER:
+                    Payment_status=True
+                
+                    thirdw.ids.Pay_status.source= 'Payment_Successful.png' #shows sucess png
+                    thirdw.ids.Spinner.active =False    
+            
+                else:
+                    pass
+            else:
+                pass
+            sleep(0.2)
+        else:
+            thirdw.ids.Pay_status.source= 'Payment_Not_Received.png' #shows success png
+            thirdw.ids.Spinner.active =False 
+
+
+
+    def ReCheckPayment(self):
+        ''' this checks if payment was sucessfull''' 
+        global ORDER_NUMBER
+        global Payment_status
+        
+        thirdw= self.root.get_screen('thirdwind')
+        thirdw.ids.Pay_status.source= 'Checking_Payment.png' #shows sucess png
+        thirdw.ids.Spinner.active =True 
 
         Payment_status=False
         i=1
-
         while Payment_status==False and i<5:
 
             i+=1
@@ -361,66 +421,18 @@ class MainApp(App):
                 if check==ORDER_NUMBER:
                     Payment_status=True
                 
+                    thirdw.ids.Pay_status.source= 'Payment_Successful.png' #shows sucess png
+                    thirdw.ids.Spinner.active =False    
+            
                 else:
                     pass
             else:
                 pass
-            sleep(1)
-
-    # def Action(self,Payment_status):
-
-    #     #makes a dict of the order summary
-    #     Order_Summary={"Order Number":ORDER_NUMBER,"Total R":Total,"Date":date,"Cart":three}
-
-    #     #save dict as jason
-    #     with open("Order_Summary.json", "w") as outfile:
-    #         json.dump(Order_Summary, outfile)
-######################################
-
-    # async def app_func(self):
-    #     '''trio needs to run a function, so this is it. '''
-
-    #     async with trio.open_nursery() as nursery:
-    #         '''In trio you create a nursery, in which you schedule async
-    #         functions to be run by the nursery simultaneously as tasks.
-    #         This will run all two methods starting in random order
-    #         asynchronously and then block until they are finished or canceled
-    #         at the `with` level. '''
-    #         self.nursery = nursery
-
-    # async def run_wrapper():
-    #             # trio needs to be set so that it'll be used for the event loop
-    #     await self.async_run(async_lib='trio')
-    #         print('App done')
-    #         nursery.cancel_scope.cancel()
-
-    #         nursery.start_soon(run_wrapper)
-    #         nursery.start_soon(self.Progress) 
-        
-    
-                        
-    # async def Progress(self):
-    #     global QR_status
-    #     try:
-    #         i = 0
-    #         while QR_status==False:
-    #             print("Progressbar")
-    #             popup = Factory.MyPopup()
-    #             current=popup.ids.my_progress_bar.value
-    #             current+= 0.02
-    #             popup.ids.my_progress_bar.value=current
-    #             i += 1
-    #             await trio.sleep(5)
-    #     except trio.Cancelled as e:
-    #         print('Wasting time was canceled', e)
-    #     finally:
-    #     # when canceled, print that it finished
-    #         print('Done wasting time')
-
-
+            sleep(0.2)
+        else:
+            thirdw.ids.Pay_status.source= 'Payment_Not_Received.png' #shows sucess png
+            thirdw.ids.Spinner.active =False
 
 if __name__ == '__main__':
     
     MainApp().run()
-    
-    # trio.run(TestApp().app_func)

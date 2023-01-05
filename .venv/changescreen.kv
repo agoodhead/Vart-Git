@@ -120,16 +120,16 @@
             Button:
                 text:"Clear"
                 on_press: app.Clear_all()
+                
 
             Button:
                 id:NextBut
                 text:"Next"
                 disabled: True
-                #on_press: root.disable_Button()
+               
                 on_press:app.QRcode()
                 on_press:
                     app.root.current="second"
-                    #on_press: root.manager.current = "home_screen"
                     root.manager.transition.direction="left"
                 
 
@@ -139,7 +139,7 @@
 
     canvas:
         Color:
-            rgba: 1, 1, 1, 1    # Blue
+            rgba: 1, 1, 1, 1    # White
         # size and position of Canvas
         Rectangle:
             pos: self.pos
@@ -151,6 +151,8 @@
         AsyncImage:
             id: QR
             source:'Loading.png'
+            nocache: True
+            
             
         Label:
             id:CheckoutTotal
@@ -160,15 +162,17 @@
             text:"close" 
             font_size: 20
             on_release:app.root.current="first"
+            on_release:app.RemoveImage()
+            on_release:app.Clear_all()
 
         Button:
             text:"check payment" 
             font_size: 20
-            on_press:app.CheckPayment()
-            on_release:app.root.current="thirdwind"
+            
+            on_press:app.root.current="thirdwind"
+            on_release:app.CallThreadOne()
 
-               
-
+            
 <ThirdWindow>:
     name:"thirdwind"
 
@@ -177,21 +181,26 @@
         size:root.width, root.height
 
         MDSpinner:
+            id: Spinner
             size_hint: None, None
             size: dp(46), dp(46)
             pos_hint: {'center_x': .5, 'center_y': .5}
             active: True
         
         AsyncImage:
-            id: Pay_Successful
-            source:'Payment_Successful.png'
+            id: Pay_status
+            source:'Checking_Payment.png'
+
+        Button:
+            text:"Retry Check Payment" 
+            font_size: 20
+            on_release:app.CallThreadTwo() 
 
         Button:
             text:"close" 
             font_size: 20
-            on_release:app.root.current="first" 
-
-            #if app.Payment_status==True:
+            on_release:app.root.current="first"
+            on_release:app.Clear_all() 
 
 <RootWidget>:
 
