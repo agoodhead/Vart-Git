@@ -153,7 +153,6 @@
             source:'Loading.png'
             nocache: True
             
-            
         Label:
             id:CheckoutTotal
             text: "Total:"+str(app.Total)
@@ -200,7 +199,9 @@
             text:"close" 
             font_size: 20
             on_release:app.root.current="first"
-            on_release:app.Clear_all() 
+            on_release:app.RemoveImage()
+            on_release:app.Clear_all()
+ 
 
 <RootWidget>:
 

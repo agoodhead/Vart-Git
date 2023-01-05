@@ -165,9 +165,9 @@ class MainApp(MDApp):
         self.Snack4_remain=Remaining_stock[Snack4_name]
         self.Snack5_remain=Remaining_stock[Snack5_name]
         self.Snack6_remain=Remaining_stock[Snack6_name]
-        
-        return RootWidget()
 
+        return RootWidget()
+           
     def CallThreadOne(self):
         threading.Thread(target=self.CheckPayment).start()
 
@@ -302,7 +302,7 @@ class MainApp(MDApp):
 
     def Disable_button(self):
         local= self.root.get_screen('first')
-        local.ids.NextBut.disabled =False 
+        local.ids.NextBut.disabled =False    
 
     def RemoveImage(self):
         if os.path.exists("SnapScanQR.png"):
@@ -367,11 +367,13 @@ class MainApp(MDApp):
         ''' this checks if payment was sucessfull''' 
         global ORDER_NUMBER
         global Payment_status
-        
+
         thirdw= self.root.get_screen('thirdwind')
         Payment_status=False
         i=1
+
         while Payment_status==False and i<5:
+
             i+=1
             response=requests.get(URL1+ORDER_NUMBER,auth = HTTPBasicAuth(API_KEY, "")) # gets payment status from SnapScan
     
@@ -401,7 +403,7 @@ class MainApp(MDApp):
         ''' this checks if payment was sucessfull''' 
         global ORDER_NUMBER
         global Payment_status
-        
+
         thirdw= self.root.get_screen('thirdwind')
         thirdw.ids.Pay_status.source= 'Checking_Payment.png' #shows sucess png
         thirdw.ids.Spinner.active =True 
@@ -412,18 +414,18 @@ class MainApp(MDApp):
 
             i+=1
             response=requests.get(URL1+ORDER_NUMBER,auth = HTTPBasicAuth(API_KEY, "")) # gets payment status from SnapScan
-    
+
             if response.status_code == 200 and len(json.loads(response.content)) > 0:
-        
+
                 Snap_response=(json.loads(response.content))[0] #only one payment in list so check first item
                 check=(Snap_response['merchantReference'])      # dictionary search for OrderNumber refernce
         
                 if check==ORDER_NUMBER:
                     Payment_status=True
-                
+
                     thirdw.ids.Pay_status.source= 'Payment_Successful.png' #shows sucess png
                     thirdw.ids.Spinner.active =False    
-            
+
                 else:
                     pass
             else:
