@@ -166,6 +166,8 @@ class MainApp(MDApp):
         self.Snack5_remain=Remaining_stock[Snack5_name]
         self.Snack6_remain=Remaining_stock[Snack6_name]
 
+        self.theme_cls.primary_palette = "BlueGray"
+        self.theme_cls.theme_style = "Dark"
         return RootWidget()
            
     def CallThreadOne(self):
