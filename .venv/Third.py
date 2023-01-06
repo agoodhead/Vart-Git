@@ -121,6 +121,8 @@ vending_ID=1254 #should be number used to generate qr code
 
 Builder.load_file('changescreen.kv')
 
+
+
 class FirstWindow(Screen):
     pass
 
@@ -168,6 +170,7 @@ class MainApp(MDApp):
 
         self.theme_cls.primary_palette = "BlueGray"
         self.theme_cls.theme_style = "Dark"
+        
         return RootWidget()
            
     def CallThreadOne(self):
