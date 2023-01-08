@@ -1,5 +1,4 @@
 from time import sleep
-#import trio #used for Async
 from kivy.app import async_runTouchApp
 from functools import partial
 from functools import total_ordering
@@ -28,6 +27,7 @@ import json
 import os
 import datetime
 import threading
+from threading import Thread, Event
 
 ##this stuff is used for SnapScan
 
@@ -35,45 +35,59 @@ URL1 = "https://pos.snapscan.io/merchant/api/v1/payments?status=completed&mercha
 URL2="https://pos.snapscan.io/qr/"#for creating QR codes
 API_KEY = "ef960def-2e4e-41ba-ab28-1efb393d74a4"
 SNAP_CODE= "-XUZdg74"
+vending_ID="Vender1" #should be number used to generate qr code
 
-# This stuff is used for Google sheets
-
-Project="VartProduct"
-Restock_Sheet="Restock_List"
-Inventory_Sheet= "Inventory_Status"
 Inventory_Loaded=[{'Product':'none','Quantity':0, 'Price':0.0},
-                    {'Product':'none','Quantity':0, 'Price':0.0},
-                    {'Product':'none','Quantity':0, 'Price':0.0}] #this is to build the vector
-
-
-def Google_Sheet_Restock(Project,Restock_Sheet,):
-    """This used to get inventory from Google sheet,
-    this sould only be run once after macine is reloaded"""
-
+                        {'Product':'none','Quantity':0, 'Price':0.0},
+                        {'Product':'none','Quantity':0, 'Price':0.0},
+                        {'Product':'none','Quantity':0, 'Price':0.0},
+                        {'Product':'none','Quantity':0, 'Price':0.0},
+                        {'Product':'none','Quantity':0, 'Price':0.0}] #this is to build the vector
     
-    if os.path.exists("Inventory_Loaded.json"):
-        os.remove("Inventory_Loaded.json")
-    else:
-        print("The file does not exist") 
+def Reload():
+    '''This should be run when the vending maching is reloaded and interupt button is pressed'''
+    # This stuff is used for Google sheets
+    Project="VartProduct"
+    Restock_Sheet="Restock_List"
+    Inventory_Sheet= "Inventory_Status"
     
-    #Used for google sheet: update the file name if api key is moved
-    sa = gspread.service_account(filename="varttest-7608f41c9461.json")
-    sh = sa.open(Project)
-    wks = sh.worksheet(Restock_Sheet)
-    Inventory_Loaded = wks.get_all_records()
+    def Google_Sheet_Restock(Project,Restock_Sheet,):
+        """This used to get inventory from Google sheet,
+        this sould only be run once after macine is reloaded"""
 
-    #saves google sheet contens as jason
-    with open("Inventory_Loaded.json", "w") as outfile:
-        json.dump(Inventory_Loaded, outfile)
+        if os.path.exists("Inventory_Loaded.json"):
+            os.remove("Inventory_Loaded.json")
+        else:
+            print("The file does not exist") 
+        try:
+            #Used for google sheet: update the file name if api key is moved
+            sa = gspread.service_account(filename="varttest-7608f41c9461.json")
+            sh = sa.open(Project)
+            wks = sh.worksheet(Restock_Sheet)
+            Inventory_Loaded = wks.get_all_records()
 
-Google_Sheet_Restock(Project,Restock_Sheet)
+        #saves Google sheet contens as jason
+            with open("Inventory_Loaded.json", "w") as outfile:
+                json.dump(Inventory_Loaded, outfile)
+        except:
+            print("no connection")
+            
 
-with open('Inventory_Loaded.json', 'r') as openfile:
+    Google_Sheet_Restock(Project,Restock_Sheet) #runs the above code
 
+Reload() #this will be put in an interupt backet
+
+############################################################################################################################3
+# Main Loop Starts here  
+
+if os.path.exists("Inventory_Loaded.json"):
+    with open('Inventory_Loaded.json', 'r') as openfile:
 # Reading from json file
-    Inventory_Loaded = json.load(openfile)
+        Inventory_Loaded = json.load(openfile)
+            
+else:
+    print("The file does not exist") 
 
-### Read text file to get inventory
 
 Snack1_name= (Inventory_Loaded[0]['Product']) 
 Snack1_number=(Inventory_Loaded[0]['Quantity'])
@@ -94,9 +108,7 @@ Snack6_name=(Inventory_Loaded[5]['Product'])
 Snack6_number=(Inventory_Loaded[5]['Quantity'])
 Snack6_price="%.2f" %float((Inventory_Loaded[5]['Price']))
 
-
-#this should be saved in Text file incase Pi is turned off. File to be overwritten each time purchase is made
-
+#this is just to build the  dictionary
 Remaining_stock={Snack1_name:Snack1_number,
                     Snack2_name:Snack2_number,
                     Snack3_name:Snack3_number,
@@ -104,24 +116,33 @@ Remaining_stock={Snack1_name:Snack1_number,
                     Snack5_name:Snack5_number,
                     Snack6_name:Snack6_number}
 
-#this is should be checked.!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!1
-Remaining_stock_int={Snack1_name:3,Snack2_name:3,Snack3_name:3,Snack4_name:0,Snack5_name:0,Snack6_name:0}  
+
+#this is just to build the dictionary
+# Remaining_stock_int={Snack1_name:1,
+#                         Snack2_name:1,
+#                         Snack3_name:1,
+#                         Snack4_name:1,
+#                         Snack5_name:1,
+#                         Snack6_name:1} 
+
+Remaining_stock_int=copy.deepcopy(Remaining_stock)
+
+# #Saves the Remaining stock
+# with open("Remaining_stock.json", "w") as outfile: #saves remaning inventory as jason .... to be loaded next time
+#     json.dump(Remaining_stock, outfile)
+
+# #Reads Remaing Stock
+# with open('Remaining_stock.json', 'r') as openfile:
+# # Reading from json file
+#     Remaining_stock = json.load(openfile) 
+
+# Remaining_stock_int=copy.deepcopy(Remaining_stock)
 
 Total =0 # starts the prorame with zero 
 Cart={} # starts the programe with nothing in cart
 Payment_status=False
 
-vending_ID=1254 #should be number used to generate qr code
-#ORDER_NUMBER=str(1) #this will be updated for each purchase and will be included in the Snap QR code
-
-# def order(self):
-#     global date
-#     global ORDER_NUMBER
-#     ORDER_NUMBER=datetime.datetime.now().strftime("%f")
-
 Builder.load_file('changescreen.kv')
-
-
 
 class FirstWindow(Screen):
     pass
@@ -135,13 +156,18 @@ class ThirdWindow(Screen):
 class RootWidget(ScreenManager):
     pass
 
+Tic=datetime.datetime.now().strftime("%f") 
+
+poo="brown"
+
 class MainApp(MDApp):
 
     status = NumericProperty()
     result_text = StringProperty()
     result_image = StringProperty()
     headers = DictProperty()
-    
+
+
     def build(self):
         
         self.Total=Total
@@ -171,6 +197,7 @@ class MainApp(MDApp):
         self.theme_cls.primary_palette = "BlueGray"
         self.theme_cls.theme_style = "Dark"
         
+
         return RootWidget()
            
     def CallThreadOne(self):
@@ -179,19 +206,58 @@ class MainApp(MDApp):
     def CallThreadTwo(self):
         threading.Thread(target=self.ReCheckPayment).start()
 
-    def CallThreadTimeOut(self):
-        threading.Thread(target=self.TimeOut).start()
-    
-    def TimeOut(self):
-        sleep(60)
+    def CallThreadTwo(self):
+        threading.Thread(target=self.ScrewMove).start()
 
+    
+    def TimeOut():
+            
+            def TimeCheck():
+                global Tic
+                global poo
+                
+                while True:
+                    
+                    Tok= datetime.datetime.now().strftime("%f")
+                    dt=int(Tok)-int(Tic)
+
+                    while dt<60000:
+                        
+                        print(dt/1000)
+                        print(poo)
+                        sleep(1)
+                        Tok= datetime.datetime.now().strftime("%f")
+                        dt=int(Tok)-int(Tic)
+
+                    print("time out")
+
+            threading.Thread(target=TimeCheck,).start()
+                    
+            #threading.Thread(target=TimeCheck,args=(Tic,)).start()
+        
+    TimeOut()
+
+    def ScrewMove(self):
+        print("Motor Started")
+    
+
+    # def stopThread(self):
+    #     print("me")
+    #     event = Event()
+    #     event.set()
+    #     event.is_set()
+        
+    def TicTok(self):
+        global Tic
+        global poo
+        Tic=datetime.datetime.now().strftime("%f")
+        poo="soft"
+        
     def Add_cart(self,snack_name): #
         # adds items to cart
         global Cart
         global three#nice cart string
         local= self.root.get_screen('first') #used to assign ids to first screen widgets
-        
-#self.root.get_screen('Write').ids.input.text
 
         #update cart dictionary
         Cart[snack_name] = Cart.get(snack_name, 0) + 1
@@ -203,7 +269,6 @@ class MainApp(MDApp):
         four=three.replace("'", '')
         five=four.replace(",","\n")
 
-        #need some work to print the cart in a neater way !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!1
         local.ids.CartID.text=five
         
     def Update_total(self,snack_n):
@@ -215,8 +280,9 @@ class MainApp(MDApp):
         price =(next((sub for sub in Inventory_Loaded if sub['Product'] == snack_n), None)["Price"]) #gets price
         Total=Total+price
         local= self.root.get_screen('first')
-        local.ids.TotalID.text=f'R{Total}.00'
-        second.ids.CheckoutTotal.text=f'Total Price :R{Total}.00'
+        local.ids.TotalID.text=f'R{Total}'
+        second.ids.CheckoutTotal.text=f'Total Price :R{Total}'
+
     def Rem(self,snack_name):
         
         global Remaining_stock_int
@@ -230,7 +296,7 @@ class MainApp(MDApp):
         local= self.root.get_screen('first')
         
         Remaining_stock_int[snack_name] = Remaining_stock_int.get(snack_name, 0) -1
-        
+
         Snack1_remain=Remaining_stock_int[Snack1_name]
         Snack2_remain=Remaining_stock_int[Snack2_name]
         Snack3_remain=Remaining_stock_int[Snack3_name]
@@ -261,6 +327,8 @@ class MainApp(MDApp):
         local.ids.Snack6_count.text=f'Available: {Snack6_remain}'
         if Snack6_remain==0:
             local.ids.Snack6_but.disabled =True
+
+        return Remaining_stock_int
 
     def Clear_all(self):
         global Cart
@@ -322,20 +390,13 @@ class MainApp(MDApp):
     def QRcode(self):
 
         global Total
-        global vending_ID
-        global ORDER_NUMBER
-
-        #removes old QR Code from file system before a new one is created
-        # if os.path.exists("SnapScanQR.png"):
-        #     os.remove("SnapScanQR.png")
-        # else:
-        #     print("The file does not exist")  
+        global ORDER_NUMBER 
         
-        ORDER_NUMBER=datetime.datetime.now().strftime("%f") #the millisecond date is the order number
+        ORDER_NUMBER=datetime.now().strftime("%f") #the millisecond date is the order number
     
         TOTAL=str(Total*100)# total needs to be in cents for Snap Scan API
        
-        url=URL2+SNAP_CODE+".png?id="+ORDER_NUMBER+"&amount="+TOTAL+"&snap_code_size=500&strict=true"
+        url=URL2+SNAP_CODE+".png?id="+ORDER_NUMBER+"&amount="+TOTAL+"&snapCodeReference"+vending_ID+"&snap_code_size=500&strict=true"
         UrlRequest(url,on_success=self.Pass_image,on_failure=self.Fail_image) #this uses the asyn requet from Kivy
     
     def Pass_image(self, req, result):
@@ -372,7 +433,9 @@ class MainApp(MDApp):
         ''' this checks if payment was sucessfull''' 
         global ORDER_NUMBER
         global Payment_status
-
+        global Remaining_stock_int
+        global Remaining_stock
+        
         thirdw= self.root.get_screen('thirdwind')
         Payment_status=False
         i=1
@@ -390,9 +453,18 @@ class MainApp(MDApp):
                 if check==ORDER_NUMBER:
                     Payment_status=True
                 
-                    thirdw.ids.Pay_status.source= 'Payment_Successful.png' #shows sucess png
-                    thirdw.ids.Spinner.active =False    
-            
+                    thirdw.ids.Pay_status.source= 'Payment_Successful.png' #shows success png
+                    thirdw.ids.Spinner.active =False    #stops spinner spinning
+
+                    #Saves the Remaining stock
+                    with open("Remaining_stock.json", "w") as outfile: #saves remaning inventory as jason .... to be loaded next time
+                        json.dump(Remaining_stock_int, outfile)
+
+                    #Reads Remaing Stock
+                    with open('Remaining_stock.json', 'r') as openfile:
+                    # Reading from json file
+                        Remaining_stock = json.load(openfile) 
+
                 else:
                     pass
             else:
@@ -401,8 +473,6 @@ class MainApp(MDApp):
         else:
             thirdw.ids.Pay_status.source= 'Payment_Not_Received.png' #shows success png
             thirdw.ids.Spinner.active =False 
-
-
 
     def ReCheckPayment(self):
         ''' this checks if payment was sucessfull''' 
@@ -429,7 +499,16 @@ class MainApp(MDApp):
                     Payment_status=True
 
                     thirdw.ids.Pay_status.source= 'Payment_Successful.png' #shows sucess png
-                    thirdw.ids.Spinner.active =False    
+                    thirdw.ids.Spinner.active =False 
+
+                    #Saves the Remaining stock
+                    with open("Remaining_stock.json", "w") as outfile: #saves remaning inventory as jason .... to be loaded next time
+                        json.dump(Remaining_stock_int, outfile)
+
+                    #Reads Remaing Stock
+                    with open('Remaining_stock.json', 'r') as openfile:
+                    # Reading from json file
+                        Remaining_stock = json.load(openfile) 
 
                 else:
                     pass
