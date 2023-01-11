@@ -2,7 +2,6 @@ from time import sleep
 from kivy.app import async_runTouchApp
 from functools import partial
 from functools import total_ordering
-from kivy.app import App
 from kivy.uix.label import Label
 from kivy.uix.gridlayout import GridLayout
 from kivy.uix.textinput import TextInput
@@ -16,18 +15,19 @@ import copy
 from kivy.uix.screenmanager import Screen,ScreenManager,RiseInTransition
 from kivy.properties import ObjectProperty
 from kivymd.app import MDApp
+from kivy.app import App
 from kivy.network.urlrequest import UrlRequest
 from PIL import Image
 import requests
 from requests.auth import HTTPBasicAuth
 from kivy.properties import NumericProperty, StringProperty, DictProperty
-from queue import Empty
 import gspread
 import json
 import os
-import datetime
+from datetime import datetime
 import threading
-from threading import Thread, Event
+from kivy.clock import Clock
+
 
 ##this stuff is used for SnapScan
 
@@ -156,9 +156,9 @@ class ThirdWindow(Screen):
 class RootWidget(ScreenManager):
     pass
 
-Tic=datetime.datetime.now().strftime("%f") 
 
-poo="brown"
+#Tic=int(datetime.datetime.now().strftime("%f"))/1000
+Tic=False
 
 class MainApp(MDApp):
 
@@ -196,7 +196,8 @@ class MainApp(MDApp):
 
         self.theme_cls.primary_palette = "BlueGray"
         self.theme_cls.theme_style = "Dark"
-        
+
+        #Clock.schedule_once(self.Clear_all)
 
         return RootWidget()
            
@@ -208,50 +209,14 @@ class MainApp(MDApp):
 
     def CallThreadTwo(self):
         threading.Thread(target=self.ScrewMove).start()
-
     
-    def TimeOut():
-            
-            def TimeCheck():
-                global Tic
-                global poo
-                
-                while True:
-                    
-                    Tok= datetime.datetime.now().strftime("%f")
-                    dt=int(Tok)-int(Tic)
-
-                    while dt<60000:
-                        
-                        print(dt/1000)
-                        print(poo)
-                        sleep(1)
-                        Tok= datetime.datetime.now().strftime("%f")
-                        dt=int(Tok)-int(Tic)
-
-                    print("time out")
-
-            threading.Thread(target=TimeCheck,).start()
-                    
-            #threading.Thread(target=TimeCheck,args=(Tic,)).start()
-        
-    TimeOut()
-
     def ScrewMove(self):
         print("Motor Started")
-    
-
-    # def stopThread(self):
-    #     print("me")
-    #     event = Event()
-    #     event.set()
-    #     event.is_set()
-        
+            
     def TicTok(self):
         global Tic
-        global poo
-        Tic=datetime.datetime.now().strftime("%f")
-        poo="soft"
+        Tic=True
+        #Tic=int(datetime.datetime.now().strftime("%f"))/1000
         
     def Add_cart(self,snack_name): #
         # adds items to cart
@@ -330,13 +295,18 @@ class MainApp(MDApp):
 
         return Remaining_stock_int
 
-    def Clear_all(self):
+    def Clear_all(self, dt):
         global Cart
         global Total
         global Remaining_stock_int
         global Remaining_stock
 
-        local= self.root.get_screen('first')
+        app= App.get_running_app()
+        local=app.root.get_screen('first')
+        
+        #local= self.root.get_screen('first')
+
+        #local=self.root.ids.first
 
         Cart={}
         Total=0
@@ -519,6 +489,46 @@ class MainApp(MDApp):
             thirdw.ids.Pay_status.source= 'Payment_Not_Received.png' #shows sucess png
             thirdw.ids.Spinner.active =False
 
+
+    def TimeOut(self):
+        " check this timing its kinda working"
+        
+        def TimeCheck():
+            global Tic
+        
+            while True:
+                #Tok= int(datetime.datetime.now().strftime("%f"))/1000
+                #dt=(Tok-Tic)
+                if Tic==True:
+                    Tok=0
+                    Tic=False
+                    while Tok<5:
+                        print(Tok)
+                        sleep(1)
+                        Tok+=1
+                        if Tic==True:
+                            break
+                        #Tok= int(datetime.datetime.now().strftime("%f"))/1000
+                        #dt=Tok-Tic
+                    else:
+                        print("not working")
+                        Clock.schedule_once(self.change_screen)
+                        Clock.schedule_once(self.Clear_all)
+                        
+        threading.Thread(target=TimeCheck,).start()
+
+    def change_screen(self, dt):
+        print("change Screen ran")
+        app = App.get_running_app()
+        manager = app.root
+        manager.current = "first"
+        
+
 if __name__ == '__main__':
     
+    b=MainApp()
+    b.TimeOut()
     MainApp().run()
+    
+    
+    

@@ -102,6 +102,7 @@
                 on_press: app.Update_total(app.Snack3_name)
                 on_press: app.Disable_button()
                 on_press: app.Rem(app.Snack3_name)
+                on_press: app.TicTok()
 
         BoxLayout:
             orientation: 'horizontal'
@@ -135,6 +136,7 @@
                 on_press: app.Update_total(app.Snack4_name)
                 on_press: app.Disable_button()
                 on_press: app.Rem(app.Snack4_name)
+                on_press: app.TicTok()
 
         
             TestButton:
@@ -146,6 +148,7 @@
                 on_press: app.Update_total(app.Snack5_name)
                 on_press: app.Disable_button()
                 on_press: app.Rem(app.Snack5_name)
+                on_press: app.TicTok()
             
 
             TestButton:
@@ -158,6 +161,7 @@
                 on_press: app.Update_total(app.Snack6_name)
                 on_press: app.Disable_button()
                 on_press: app.Rem(app.Snack6_name)
+                on_press: app.TicTok()
             
 
         BoxLayout:
@@ -212,7 +216,7 @@
     
             ButtonTwo:
                 text:"Clear"
-                on_press: app.Clear_all()
+                on_press: app.Clear_all(0)
             
             ButtonTwo:
                 id:NextBut
@@ -223,6 +227,7 @@
                 on_press:
                     app.root.current="second"
                     root.manager.transition.direction="left"
+                on_press: app.TicTok()
         
                     
 
@@ -270,6 +275,7 @@
                 font_size: 20
                 on_press:app.root.current="thirdwind"
                 on_release:app.CallThreadOne()
+                on_press: app.TicTok()
 
             
 <ThirdWindow>:
@@ -301,7 +307,8 @@
             ButtonTwo:
                 text:"Retry Check Payment" 
                 font_size: 20
-                on_release:app.CallThreadTwo() 
+                on_release:app.CallThreadTwo()
+                on_press: app.TicTok() 
 
             ButtonTwo:
                 text:"close" 
@@ -315,6 +322,7 @@
 
     FirstWindow:
         name: "first"
+        id: first
     SecondWindow:
         name: "second"
     ThirdWindow:

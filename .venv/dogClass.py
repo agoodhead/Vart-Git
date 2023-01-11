@@ -1,11 +1,20 @@
-import multiprocessing
-import time
-def cp():
-  while True:
-   for i in range (20):  
-    print ('Process: ', i)
-    time.sleep(0.05)
-x = multiprocessing.Process(target = cp)
-x.start()
-time.sleep(0.5)
-x.terminate()
+import datetime
+from time import sleep
+
+Tic=int(datetime.datetime.now().strftime("%f"))/1000
+
+def TimeOut():   
+  global Tic
+  Tok= int(datetime.datetime.now().strftime("%f"))/1000
+  dt=(Tok-Tic)
+
+  while dt<=10:
+    print(dt)
+    sleep(2)
+    Tok= int(datetime.datetime.now().strftime("%f"))/1000
+    dt=Tok-Tic
+  else:  
+    print("not working")
+                  
+        
+TimeOut()
