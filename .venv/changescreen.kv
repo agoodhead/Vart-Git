@@ -202,7 +202,6 @@
             Label:
                 id:CartID
                 text:
-                
         
             Label:
                 id:TotalID
@@ -240,8 +239,8 @@
             rgba: 1, 1, 1, 1    # White
         # size and position of Canvas
         Rectangle:
-            pos: self.center_x - 100, self.center_y + 50
-            size: 200, 200
+            pos: self.center_x - 125, self.center_y + 70
+            size: 250, 250
             
     BoxLayout:
         orientation:"vertical"
@@ -273,9 +272,9 @@
             ButtonTwo:
                 text:"check payment" 
                 font_size: 20
-                on_press:app.root.current="thirdwind"
-                on_release:app.CallThreadOne()
-                on_press: app.TicTok()
+                on_release:app.root.current="thirdwind"
+                on_press:app.CallThreadOne()
+                on_release: app.TicTok()
 
             
 <ThirdWindow>:
@@ -307,15 +306,15 @@
             ButtonTwo:
                 text:"Retry Check Payment" 
                 font_size: 20
-                on_release:app.CallThreadTwo()
-                on_press: app.TicTok() 
+                on_press:app.CallThreadTwo()
+                on_release: app.TicTok() 
 
             ButtonTwo:
                 text:"close" 
                 font_size: 20
                 on_release:app.root.current="first"
                 on_release:app.RemoveImage()
-                on_release:app.Clear_all()
+                on_release:app.Clear_all(0)
  
 
 <RootWidget>:

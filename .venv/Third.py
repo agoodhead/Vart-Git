@@ -28,6 +28,8 @@ from datetime import datetime
 import threading
 from kivy.clock import Clock
 
+import keyboard # this is used to simulate raspberri pi interupt button
+
 
 ##this stuff is used for SnapScan
 
@@ -43,40 +45,6 @@ Inventory_Loaded=[{'Product':'none','Quantity':0, 'Price':0.0},
                         {'Product':'none','Quantity':0, 'Price':0.0},
                         {'Product':'none','Quantity':0, 'Price':0.0},
                         {'Product':'none','Quantity':0, 'Price':0.0}] #this is to build the vector
-    
-def Reload():
-    '''This should be run when the vending maching is reloaded and interupt button is pressed'''
-    # This stuff is used for Google sheets
-    Project="VartProduct"
-    Restock_Sheet="Restock_List"
-    Inventory_Sheet= "Inventory_Status"
-    
-    def Google_Sheet_Restock(Project,Restock_Sheet,):
-        """This used to get inventory from Google sheet,
-        this sould only be run once after macine is reloaded"""
-
-        if os.path.exists("Inventory_Loaded.json"):
-            os.remove("Inventory_Loaded.json")
-        else:
-            print("The file does not exist") 
-        try:
-            #Used for google sheet: update the file name if api key is moved
-            sa = gspread.service_account(filename="varttest-7608f41c9461.json")
-            sh = sa.open(Project)
-            wks = sh.worksheet(Restock_Sheet)
-            Inventory_Loaded = wks.get_all_records()
-
-        #saves Google sheet contens as jason
-            with open("Inventory_Loaded.json", "w") as outfile:
-                json.dump(Inventory_Loaded, outfile)
-        except:
-            print("no connection")
-            
-
-    Google_Sheet_Restock(Project,Restock_Sheet) #runs the above code
-
-Reload() #this will be put in an interupt backet
-
 ############################################################################################################################3
 # Main Loop Starts here  
 
@@ -87,7 +55,6 @@ if os.path.exists("Inventory_Loaded.json"):
             
 else:
     print("The file does not exist") 
-
 
 Snack1_name= (Inventory_Loaded[0]['Product']) 
 Snack1_number=(Inventory_Loaded[0]['Quantity'])
@@ -115,7 +82,6 @@ Remaining_stock={Snack1_name:Snack1_number,
                     Snack4_name:Snack4_number,
                     Snack5_name:Snack5_number,
                     Snack6_name:Snack6_number}
-
 
 #this is just to build the dictionary
 # Remaining_stock_int={Snack1_name:1,
@@ -202,6 +168,7 @@ class MainApp(MDApp):
         return RootWidget()
            
     def CallThreadOne(self):
+        
         threading.Thread(target=self.CheckPayment).start()
 
     def CallThreadTwo(self):
@@ -409,10 +376,10 @@ class MainApp(MDApp):
         thirdw= self.root.get_screen('thirdwind')
         Payment_status=False
         i=1
-
-        while Payment_status==False and i<5:
-
+        
+        while Payment_status==False and i<6:
             i+=1
+            
             response=requests.get(URL1+ORDER_NUMBER,auth = HTTPBasicAuth(API_KEY, "")) # gets payment status from SnapScan
     
             if response.status_code == 200 and len(json.loads(response.content)) > 0:
@@ -439,8 +406,9 @@ class MainApp(MDApp):
                     pass
             else:
                 pass
-            sleep(0.2)
+            sleep(0.6)
         else:
+            
             thirdw.ids.Pay_status.source= 'Payment_Not_Received.png' #shows success png
             thirdw.ids.Spinner.active =False 
 
@@ -448,6 +416,8 @@ class MainApp(MDApp):
         ''' this checks if payment was sucessfull''' 
         global ORDER_NUMBER
         global Payment_status
+        global Remaining_stock_int
+        global Remaining_stock
 
         thirdw= self.root.get_screen('thirdwind')
         thirdw.ids.Pay_status.source= 'Checking_Payment.png' #shows sucess png
@@ -489,9 +459,7 @@ class MainApp(MDApp):
             thirdw.ids.Pay_status.source= 'Payment_Not_Received.png' #shows sucess png
             thirdw.ids.Spinner.active =False
 
-
     def TimeOut(self):
-        " check this timing its kinda working"
         
         def TimeCheck():
             global Tic
@@ -502,7 +470,7 @@ class MainApp(MDApp):
                 if Tic==True:
                     Tok=0
                     Tic=False
-                    while Tok<5:
+                    while Tok<90:
                         print(Tok)
                         sleep(1)
                         Tok+=1
@@ -522,12 +490,55 @@ class MainApp(MDApp):
         app = App.get_running_app()
         manager = app.root
         manager.current = "first"
-        
 
+    def Reload_thread(self):
+        global Inventory_Loaded
+
+        '''This should be run when the vending maching is reloaded and interupt button is pressed'''
+
+        def Reload():
+            print("reload pressed")
+            # This stuff is used for Google sheets
+            Project="VartProduct"
+            Restock_Sheet="Restock_List"
+            Inventory_Sheet= "Inventory_Status"
+            
+            def Google_Sheet_Restock(Project,Restock_Sheet,):
+                """This used to get inventory from Google sheet,
+                this sould only be run once after macine is reloaded"""
+
+                if os.path.exists("Inventory_Loaded.json"):
+                    os.remove("Inventory_Loaded.json")
+                else:
+                    print("The file does not exist") 
+                try:
+                    #Used for google sheet: update the file name if api key is moved
+                    sa = gspread.service_account(filename="varttest-7608f41c9461.json")
+                    sh = sa.open(Project)
+                    wks = sh.worksheet(Restock_Sheet)
+                    Inventory_Loaded = wks.get_all_records()
+
+                #saves Google sheet contens as jason
+                    with open("Inventory_Loaded.json", "w") as outfile:
+                        json.dump(Inventory_Loaded, outfile)
+                except:
+                    print("no connection")
+    
+            Google_Sheet_Restock(Project,Restock_Sheet) #runs the above code
+        
+        def yay():
+            while True: #simulates interupt button on raspberri pi
+                if keyboard.read_key() == "p":
+                    Reload()
+
+        threading.Thread(target=yay,).start()
+
+        
 if __name__ == '__main__':
     
     b=MainApp()
     b.TimeOut()
+    b.Reload_thread()
     MainApp().run()
     
     
