@@ -1,24 +1,21 @@
-import time
-from ServoSix import ServoSix
+from gpiozero import Servo
+from time import sleep
 
-# Initialize the ServoSix controller
-ss = ServoSix()
-
-# Set the servo channel (0-5) that the MD996R servo is connected to
-servo_channel = 0
+# Set the GPIO pin number connected to the ServoSix controller
+servo_pin = 17
 
 # Set the angle limits for the servo
-min_angle = 0  # Minimum angle (0 degrees)
-max_angle = 180  # Maximum angle (180 degrees)
+min_angle = -90  # Minimum angle (-90 degrees)
+max_angle = 90  # Maximum angle (90 degrees)
 
 # Set the desired angle for the servo (360 degrees)
 target_angle = 360
 
 # Set the speed of the servo rotation
-rotation_speed = 1  # Adjust as needed
+rotation_speed = 0.05  # Adjust as needed
 
-# Set the initial position to the minimum angle
-ss.setServo(servo_channel, min_angle)
+# Initialize the servo
+servo = Servo(servo_pin)
 
 # Calculate the total steps required to reach the target angle
 total_steps = int((target_angle - min_angle) / rotation_speed)
@@ -26,15 +23,14 @@ total_steps = int((target_angle - min_angle) / rotation_speed)
 # Rotate the servo gradually towards the target angle
 for step in range(total_steps + 1):
     angle = min_angle + (rotation_speed * step)
-    ss.setServo(servo_channel, angle)
-    time.sleep(0.02)  # Adjust the delay as needed for smooth movement
+    servo.value = angle
+    sleep(0.02)  # Adjust the delay as needed for smooth movement
 
 # Wait for a moment at the target angle (optional)
-time.sleep(1)
+sleep(1)
 
 # Stop the servo by setting it to the minimum angle
-ss.setServo(servo_channel, min_angle)
+servo.value = min_angle
 
-# Clean up the ServoSix controller
-ss.cleanup()
-g
+# Cleanup the servo
+servo.close()
